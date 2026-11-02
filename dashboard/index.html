@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projeto Enriquecer — Painel de Arquitetura & Avaliação</title>
+<style>
+  :root{
+    --bg:#0b1220; --bg2:#111a2e; --card:#16203a; --card2:#1b2745;
+    --line:#263352; --txt:#e8eefc; --mut:#93a4c7; --acc:#4f8cff;
+    --acc2:#22d3ee; --ok:#34d399; --warn:#fbbf24; --bad:#f87171; --vio:#a78bfa;
+    --shadow:0 10px 30px rgba(0,0,0,.35); --r:14px;
+    font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 10% -10%,#1a2a55 0%,transparent 50%),radial-gradient(900px 500px at 100% 0%,#0f3a4a 0%,transparent 45%),var(--bg);color:var(--txt);min-height:100vh}
+  a{color:var(--acc2);text-decoration:none}
+  .wrap{max-width:1240px;margin:0 auto;padding:28px 20px 60px}
+
+  /* Header */
+  header.top{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-bottom:28px}
+  .brand{display:flex;gap:14px;align-items:center}
+  .logo{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:grid;place-items:center;font-weight:800;font-size:20px;color:#041027;box-shadow:var(--shadow)}
+  .brand h1{font-size:22px;letter-spacing:.2px}
+  .brand p{color:var(--mut);font-size:13px;margin-top:2px}
+  .badges{display:flex;gap:8px;flex-wrap:wrap}
+  .badge{background:var(--card);border:1px solid var(--line);padding:7px 12px;border-radius:999px;font-size:12px;color:var(--mut)}
+  .badge b{color:var(--txt)}
+  .badge.live{border-color:#065f46;background:#052e2b;color:#6ee7b7}
+  .badge.live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#34d399;margin-right:7px;box-shadow:0 0 8px #34d399}
+
+  /* Nav */
+  nav.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px;position:sticky;top:0;z-index:5;background:rgba(11,18,32,.85);backdrop-filter:blur(8px);padding:10px 0;border-bottom:1px solid var(--line)}
+  nav.tabs button{background:var(--card);border:1px solid var(--line);color:var(--mut);padding:9px 14px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600}
+  nav.tabs button.active{background:linear-gradient(135deg,#1d4ed8,#0891b2);color:#fff;border-color:transparent}
+  section.panel{display:none;animation:fade .25s ease}
+  section.panel.show{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* KPIs */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+  .kpi{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 14px;box-shadow:var(--shadow)}
+  .kpi .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}
+  .kpi .val{font-size:26px;font-weight:800;margin-top:6px}
+  .kpi .sub{font-size:12px;color:var(--mut);margin-top:4px}
+  .kpi.roi .val{color:var(--ok)} .kpi.cac .val{color:var(--warn)} .kpi.conv .val{color:var(--acc2)}
+  .kpi.sales .val{color:var(--vio)} .kpi.rev .val{color:var(--ok)} .kpi.leads .val{color:var(--acc)}
+
+  /* Cards / grid */
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+  .card h3{font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .card h3 .dot{width:9px;height:9px;border-radius:50%;background:var(--acc)}
+  .card p.desc{color:var(--mut);font-size:13px;line-height:1.55}
+  .tag{display:inline-block;font-size:11px;padding:3px 8px;border-radius:6px;background:#0f2a55;color:#9ec5ff;border:1px solid #1e3a6e;margin:4px 4px 0 0}
+  .tag.g{background:#0c3b2e;color:#6ee7b7;border-color:#14532d}
+  .tag.y{background:#3b2f0c;color:#fcd34d;border-color:#713f12}
+  .tag.v{background:#2a1f4d;color:#c4b5fd;border-color:#4c1d95}
+
+  /* Flow */
+  .flow{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;justify-content:center;margin:10px 0 4px}
+  .step{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:130px;text-align:center;position:relative}
+  .step .n{font-size:10px;color:var(--acc2);font-weight:700;letter-spacing:.06em}
+  .step .t{font-size:13px;font-weight:700;margin-top:4px}
+  .step .d{font-size:11px;color:var(--mut);margin-top:4px}
+  .arrow{align-self:center;color:var(--acc);font-weight:800;font-size:18px}
+  .step.brain{border-color:#2563eb;background:linear-gradient(180deg,#12275a,#16203a);box-shadow:0 0 0 1px #2563eb55,0 8px 24px #2563eb22}
+  .step.analyst{border-color:#0891b2;background:linear-gradient(180deg,#0c3b4a,#16203a)}
+  .step.sale{border-color:#7c3aed;background:linear-gradient(180deg,#2a1f4d,#16203a)}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.06em;background:#101a30}
+  tr:hover td{background:#1a2744}
+  code{background:#0d1526;border:1px solid var(--line);padding:2px 6px;border-radius:6px;font-size:12px;color:#9ec5ff}
+  pre{background:#0a1120;border:1px solid var(--line);border-radius:10px;padding:14px;overflow:auto;font-size:12.5px;line-height:1.5;color:#c9d7f5}
+
+  /* Runner */
+  .runner{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:900px){.runner{grid-template-columns:1fr}}
+  label{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px}
+  input,select{width:100%;background:#0d1526;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:14px}
+  input:focus,select:focus{outline:2px solid #2563eb66;border-color:var(--acc)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{margin-top:14px;width:100%;border:0;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer;background:linear-gradient(135deg,#2563eb,#0891b2);color:#fff;box-shadow:0 8px 20px #2563eb44}
+  .btn:disabled{opacity:.5;cursor:wait}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--mut);box-shadow:none}
+  .console{background:#070d1a;border:1px solid var(--line);border-radius:12px;height:340px;overflow:auto;padding:12px;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.55;color:#8fb6ff}
+  .console .ok{color:#6ee7b7} .console .warn{color:#fcd34d} .console .err{color:#fca5a5} .console .head{color:#e8eefc;font-weight:700}
+  .console .mut{color:#5f7396}
+
+  /* Eval */
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px}
+  .pill.hi{background:#7f1d1d;color:#fecaca} .pill.md{background:#78350f;color:#fde68a} .pill.lo{background:#14532d;color:#bbf7d0}
+  .pill.good{background:#064e3b;color:#6ee7b7}
+  ul.clean{list-style:none;margin-top:8px}
+  ul.clean li{padding:7px 0 7px 22px;position:relative;color:var(--mut);font-size:13.5px;line-height:1.5;border-bottom:1px dashed #26335255}
+  ul.clean li::before{content:"▸";position:absolute;left:0;color:var(--acc2)}
+  ul.clean li:last-child{border-bottom:0}
+
+  .section-title{font-size:16px;font-weight:800;margin:26px 0 12px;display:flex;align-items:center;gap:10px}
+  .section-title::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+  footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--mut);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:900px){.split{grid-template-columns:1fr}}
+  .method{display:flex;gap:10px;padding:10px 0;border-bottom:1px dashed #26335266}
+  .method:last-child{border-bottom:0}
+  .method .m{min-width:170px;font-family:ui-monospace,monospace;font-size:12.5px;color:#9ec5ff}
+  .method .x{color:var(--mut);font-size:13px;line-height:1.45}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo">E</div>
+      <div>
+        <h1>Projeto Enriquecer</h1>
+        <p>Orquestração de Agentes de Marketing — Painel de Arquitetura, Estudo & Avaliação</p>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge live" id="statusBadge">servidor online</span>
+      <span class="badge">URL <b>127.0.0.1:8000</b></span>
+      <span class="badge">Swagger <b><a href="/docs" target="_blank">/docs</a></b></span>
+      <span class="badge">v <b>0.1.0 MVP</b></span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="active" data-tab="visao">1. Visão Geral</button>
+    <button data-tab="fluxo">2. Fluxo do Processo</button>
+    <button data-tab="agentes">3. Agentes & Funções</button>
+    <button data-tab="motor">4. Simular Engrenagem</button>
+    <button data-tab="dados">5. Dados & Persistência</button>
+    <button data-tab="api">6. API</button>
+    <button data-tab="avaliacao">7. Avaliação</button>
+    <button data-tab="estudo">8. Roteiro de Estudo</button>
+  </nav>
+
+  <!-- ============ 1 VISÃO GERAL ============ -->
+  <section class="panel show" id="visao">
+    <div class="kpis" id="kpis">
+      <div class="kpi roi"><div class="lbl">ROI</div><div class="val" id="kRoi">—</div><div class="sub">(receita − investimento) / investimento</div></div>
+      <div class="kpi cac"><div class="lbl">CAC</div><div class="val" id="kCac">—</div><div class="sub">investimento / vendas</div></div>
+      <div class="kpi conv"><div class="lbl">Conversão</div><div class="val" id="kConv">—</div><div class="sub">vendas / leads</div></div>
+      <div class="kpi sales"><div class="lbl">Vendas</div><div class="val" id="kVendas">—</div><div class="sub">registradas no checkout</div></div>
+      <div class="kpi rev"><div class="lbl">Receita</div><div class="val" id="kReceita">—</div><div class="sub">soma das vendas</div></div>
+      <div class="kpi leads"><div class="lbl">Leads</div><div class="val" id="kLeads">—</div><div class="sub">jornada no funil</div></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot"></span>O que é este sistema</h3>
+      <p class="desc">
+        MVP de orquestração de agentes de marketing no modelo <b>Cérebro e Executores</b>.
+        O <b>Agente Cérebro</b> recebe a meta do CEO, roteia e delega tarefas aos executores
+        (<b>Pesquisa → Copy → Tráfego</b>). O lead percorre o <b>funil de vendas</b>
+        (Captação → Educação → Conversão) com o <b>Agente Comercial</b>, é faturado no
+        <b>Checkout</b>, e o <b>Agente Analista</b> calcula <b>ROI, CAC e Conversão</b>,
+        devolvendo o relatório ao Cérebro para uma <b>nova decisão</b> — fechando o loop de feedback.
+      </p>
+      <div style="margin-top:12px">
+        <span class="tag">FastAPI</span><span class="tag">Python 3.12</span>
+        <span class="tag g">SQLite</span><span class="tag g">Pydantic</span>
+        <span class="tag y">Loop de feedback</span><span class="tag v">8 agentes/módulos</span>
+        <span class="tag">porta 8000</span>
+      </div>
+    </div>
+
+    <div class="section-title">Arquitetura — Cérebro e Executores</div>
+    <div class="card">
+      <pre>
+   Meta do CEO ─────────►┌──────────────────────────┐
+                         │      AGENTE CÉREBRO       │  agents/brain.py
+                         │ route() · dispatch() ·    │
+                         │ process_feedback()        │
+                         └────┬─────────────▲────────┘
+              delega ─────────┤             │ relatório (ROI/CAC/Conv)
+                              ▼             │
+                    ┌──────────────┐        │
+                    │  PESQUISA    │────────┤  agents/research.py
+                    └──────┬───────┘        │
+                           ▼                │
+                    ┌──────────────┐        │
+                    │    COPY      │────────┤  agents/copy.py
+                    └──────┬───────┘        │
+                           ▼                │
+                    ┌──────────────┐        │
+                    │   TRÁFEGO    │────────┤  agents/traffic.py
+                    └──────┬───────┘        │
+                           ▼                │
+     Lead ──► FUNIL (Captacao→Educacao→Conversao)   core/funnel.py
+                 │                                   agents/commercial.py
+                 ▼                                   core/checkout.py
+            CHECKOUT ──► vendas ──► ANALISTA ───────┘  agents/analyst.py
+                                                          │
+              NOVA DECISÃO (rota, ajustes, nova meta) ◄────┘</pre>
+      <p class="desc" style="margin-top:10px">
+        Comunicação: <b>chamadas de função internas</b> (ponto de troca isolado em
+        <code>core/engine.py::_internal_executor</code> — migra para HTTP local mudando só essa função).
+        Persistência: SQLite (<code>enriquecer.db</code>) com tabelas
+        <code>leads</code>, <code>sales</code>, <code>reports</code>, <code>execution_log</code>.
+      </p>
+    </div>
+
+    <div class="section-title">Estrutura de pastas</div>
+    <div class="card">
+      <pre>projeto-enriquecer/
+├── main.py              # Servidor FastAPI + endpoints (porta 8000)
+├── dashboard/index.html # Este painel (estudo & apresentação)
+├── test_flow.py         # Ciclo completo com asserts
+├── ARCHITECTURE.md      # Doc de arquitetura e avaliação
+├── requirements.txt     # fastapi · uvicorn · pydantic
+├── agents/              # QUEM executa
+│   ├── brain.py         #   Cérebro (roteia, delega, decide)
+│   ├── analyst.py       #   Analista (ROI/CAC/conversão)
+│   ├── research.py      #   Pesquisa (mercado/personas/ângulos)
+│   ├── copy.py          #   Copy (anúncios + landing)
+│   ├── traffic.py       #   Tráfego (públicos/canais/verba)
+│   └── commercial.py    #   Comercial (conversa com lead)
+├── core/                # COMO se conecta
+│   ├── engine.py        #   Motor do ciclo completo
+│   ├── funnel.py        #   Máquina de estados do lead
+│   └── checkout.py      #   Transação + registro de venda
+├── database/db.py       # Onde persiste (SQLite)
+└── models/schemas.py    # O que trafega (Pydantic)</pre>
+    </div>
+  </section>
+
+  <!-- ============ 2 FLUXO ============ -->
+  <section class="panel" id="fluxo">
+    <div class="section-title">Ciclo completo — Meta do CEO → Nova Decisão</div>
+    <div class="card">
+      <div class="flow">
+        <div class="step"><div class="n">ENTRADA</div><div class="t">CEO</div><div class="d">meta, orçamento,<br>ticket, público</div></div>
+        <div class="arrow">→</div>
+        <div class="step brain"><div class="n">PASSO 1</div><div class="t">Cérebro</div><div class="d">roteia por<br>palavra-chave</div></div>
+        <div class="arrow">→</div>
+        <div class="step"><div class="n">PASSO 2</div><div class="t">Pesquisa</div><div class="d">personas, dores,<br>ângulos</div></div>
+        <div class="arrow">→</div>
+        <div class="step"><div class="n">PASSO 3</div><div class="t">Copy</div><div class="d">anúncios,<br>landing, CTA</div></div>
+        <div class="arrow">→</div>
+        <div class="step"><div class="n">PASSO 4</div><div class="t">Tráfego</div><div class="d">públicos, canais,<br>orçamento</div></div>
+        <div class="arrow">→</div>
+        <div class="step"><div class="n">PASSO 5</div><div class="t">Funil</div><div class="d">Captação →<br>Educação → Conversão</div></div>
+        <div class="arrow">→</div>
+        <div class="step sale"><div class="n">PASSO 6</div><div class="t">Checkout</div><div class="d">transação<br>+ venda</div></div>
+        <div class="arrow">→</div>
+        <div class="step analyst"><div class="n">PASSO 7</div><div class="t">Analista</div><div class="d">ROI · CAC<br>· Conversão</div></div>
+        <div class="arrow">→</div>
+        <div class="step brain"><div class="n">FEEDBACK</div><div class="t">Cérebro</div><div class="d">nova decisão<br>nova rota</div></div>
+      </div>
+    </div>
+
+    <div class="section-title">Regras de roteamento do Cérebro</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Se a meta contém…</th><th>Rota disparada</th><th>Motivo</th></tr></thead>
+        <tbody>
+          <tr><td><code>venda · vendas · converter · faturar · receita</code></td><td><b>Pesquisa → Copy → Tráfego</b></td><td>Meta de VENDAS — funil completo</td></tr>
+          <tr><td><code>tráfego · lead · leads · captar · captação</code></td><td><b>Pesquisa → Tráfego → Copy</b></td><td>Meta de TRÁFEGO/LEADS</td></tr>
+          <tr><td><code>copy · texto · conteúdo · página</code></td><td><b>Pesquisa → Copy</b></td><td>Meta de COPY</td></tr>
+          <tr><td><code>marca · awareness · visibilidade</code></td><td><b>Pesquisa → Copy → Tráfego</b></td><td>Meta de MARCA</td></tr>
+          <tr><td>outra coisa</td><td><b>Pesquisa → Copy → Tráfego</b></td><td>Genérico — pipeline padrão</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Decisões do Cérebro após o relatório do Analista</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Condição medida</th><th>Decisão automática</th><th>Nova rota</th></tr></thead>
+        <tbody>
+          <tr><td><code>ROI &lt; 1.0</code></td><td>Otimizar conversão: reforçar urgência/prova social + cortar canais com CAC alto</td><td>Copy → Tráfego → Analista</td></tr>
+          <tr><td><code>Conversão &lt; 5%</code></td><td>Melhorar funil: reforçar etapa de Educação</td><td>Pesquisa → Copy → Analista</td></tr>
+          <tr><td><code>CAC &gt; 50% do ticket</code></td><td>Reduzir CAC: redirecionar verba ao melhor canal</td><td>Tráfego → Analista</td></tr>
+          <tr><td>demais casos</td><td>Escalar: +15% de orçamento no que funciona</td><td>Tráfego → Copy → Analista</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Máquina de estados do funil</div>
+    <div class="card">
+      <div class="flow">
+        <div class="step"><div class="n">ESTADO 1</div><div class="t">Captação</div><div class="d">lead entra<br>origem da mídia</div></div>
+        <div class="arrow">→</div>
+        <div class="step"><div class="n">ESTADO 2</div><div class="t">Educação</div><div class="d">conversa comercial<br>dúvida / preço</div></div>
+        <div class="arrow">→</div>
+        <div class="step sale"><div class="n">ESTADO 3</div><div class="t">Conversão</div><div class="d">qualificado<br>→ checkout</div></div>
+        <div class="arrow">→</div>
+        <div class="step analyst"><div class="n">FINAL</div><div class="t">Vendido</div><div class="d">venda registrada</div></div>
+        <div class="arrow" style="color:var(--bad)">✕</div>
+        <div class="step" style="border-color:#7f1d1d"><div class="n">FINAL</div><div class="t">Perdido</div><div class="d">sem fechamento</div></div>
+      </div>
+      <p class="desc" style="margin-top:10px">Regra: o funil <b>nunca volta etapa</b> — só avança ou fecha (Vendido/Perdido). Persistido em <code>leads.stage</code>.</p>
+    </div>
+  </section>
+
+  <!-- ============ 3 AGENTES ============ -->
+  <section class="panel" id="agentes">
+    <div class="section-title">Agentes e módulos — cada função em detalhe</div>
+    <div class="grid g2" id="agentesGrid"><!-- preenchido via JS --></div>
+
+    <div class="section-title">Contratos de dados (Pydantic — models/schemas.py)</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Modelo</th><th>Usado por</th><th>Campos principais</th></tr></thead>
+        <tbody>
+          <tr><td><code>CEOG</code></td><td>Entrada do CEO → Cérebro</td><td>meta, produto, orcamento, ticket_medio, publico_alvo</td></tr>
+          <tr><td><code>TaskDispatch</code></td><td>Cérebro → executor</td><td>agent, action, payload</td></tr>
+          <tr><td><code>BrainDecision</code></td><td>Cérebro (rota/feedback)</td><td>rota[], motivo, ajustes{}, nova_meta</td></tr>
+          <tr><td><code>ResearchOutput</code></td><td>Pesquisa → Copy/Tráfego</td><td>personas[], dores[], angulos_venda[], canais_sugeridos[]</td></tr>
+          <tr><td><code>CopyOutput</code></td><td>Copy → apresentação</td><td>anuncios[], pagina_vendas, headlines[], cta</td></tr>
+          <tr><td><code>TrafficOutput</code></td><td>Tráfego → mídia</td><td>publicos[], canais[], orcamento_por_canal{}, lances{}</td></tr>
+          <tr><td><code>LeadJourney</code></td><td>Funil</td><td>lead_id, stage, origem, interacoes, comprou</td></tr>
+          <tr><td><code>CommercialReply</code></td><td>Comercial → Funil</td><td>stage, resposta, proxima_acao, qualificado</td></tr>
+          <tr><td><code>SaleRecord</code></td><td>Checkout</td><td>sale_id, valor, canal, status</td></tr>
+          <tr><td><code>AnalystReport</code></td><td>Analista → Cérebro</td><td>roi, cac, conversao, vendas, receita, recomendacao</td></tr>
+          <tr><td><code>ExecutionLog</code></td><td>Log da engrenagem</td><td>step, agent, action, detail, status</td></tr>
+          <tr><td><code>EngineRunResponse</code></td><td>POST /engine/run</td><td>rota, logs[], pesquisa, copy_output, trafego, vendas[], relatorio, decisao_final</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 4 MOTOR ============ -->
+  <section class="panel" id="motor">
+    <div class="section-title">Disparar a engrenagem — simulação ao vivo</div>
+    <div class="runner">
+      <div class="card">
+        <h3><span class="dot"></span>Meta do CEO (JSON de entrada)</h3>
+        <label>Meta</label>
+        <input id="fMeta" value="Aumentar Vendas">
+        <label>Produto</label>
+        <input id="fProd" value="Enriquecer CRM">
+        <div class="row2">
+          <div><label>Orçamento (R$)</label><input id="fOrc" type="number" value="5000"></div>
+          <div><label>Ticket médio (R$)</label><input id="fTick" type="number" value="197"></div>
+        </div>
+        <label>Público-alvo</label>
+        <input id="fPub" value="donos de pequenos negocios">
+        <label>Leads simulados</label>
+        <input id="fLeads" type="number" value="15">
+        <button class="btn" id="btnRun" onclick="runEngine()">▶ Disparar Engrenagem completa</button>
+        <button class="btn ghost" onclick="resetDash()">↺ Recarregar métricas</button>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>Log de execução (terminal ↔ painel)</h3>
+        <div class="console" id="console"><span class="mut">Aguardando disparo… O log de cada passo aparece aqui em tempo real.</span></div>
+      </div>
+    </div>
+
+    <div class="section-title">Resultado da última rodada</div>
+    <div class="grid g3" id="runResult">
+      <div class="card"><h3><span class="dot"></span>Relatório do Analista</h3><p class="desc" id="resReport">—</p></div>
+      <div class="card"><h3><span class="dot"></span>Nova decisão do Cérebro</h3><p class="desc" id="resDecision">—</p></div>
+      <div class="card"><h3><span class="dot"></span>Resposta copy / tráfego</h3><p class="desc" id="resCopy">—</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 5 DADOS ============ -->
+  <section class="panel" id="dados">
+    <div class="section-title">Persistência SQLite — <code>enriquecer.db</code></div>
+    <div class="grid g2">
+      <div class="card">
+        <h3><span class="dot" style="background:var(--ok)"></span>Tabelas</h3>
+        <table>
+          <thead><tr><th>Tabela</th><th>Guarda</th></tr></thead>
+          <tbody>
+            <tr><td><code>leads</code></td><td>Jornada: nome, stage, origem, interações, comprou</td></tr>
+            <tr><td><code>sales</code></td><td>Vendas: valor, canal, status, data</td></tr>
+            <tr><td><code>reports</code></td><td>Relatórios do Analista (roi, cac, conversao…) por rodada</td></tr>
+            <tr><td><code>execution_log</code></td><td>Cada passo da engrenagem (auditável)</td></tr>
+          </tbody>
+        </table>
+        <p class="desc" style="margin-top:10px">Acesso sempre via <code>database/db.py → get_db()</code> — nenhum agente escreve SQL direto.</p>
+      </div>
+      <div class="card">
+        <h3><span class="dot" style="background:var(--vio)"></span>Situação atual do banco</h3>
+        <div class="kpis" style="grid-template-columns:1fr 1fr">
+          <div class="kpi leads"><div class="lbl">Leads</div><div class="val" id="dLeads">—</div></div>
+          <div class="kpi sales"><div class="lbl">Vendas</div><div class="val" id="dVendas">—</div></div>
+          <div class="kpi conv"><div class="lbl">Logs</div><div class="val" id="dLogs">—</div></div>
+          <div class="kpi rev"><div class="lbl">Relatórios</div><div class="val" id="dReports">—</div></div>
+        </div>
+        <button class="btn ghost" onclick="loadDados()">Atualizar</button>
+      </div>
+    </div>
+
+    <div class="section-title">Últimas vendas</div>
+    <div class="card" style="overflow:auto">
+      <table id="tblSales"><thead><tr><th>#</th><th>Lead</th><th>Valor</th><th>Canal</th><th>Status</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="section-title">Jornada dos leads (últimos)</div>
+    <div class="card" style="overflow:auto">
+      <table id="tblLeads"><thead><tr><th>ID</th><th>Nome</th><th>Estágio</th><th>Origem</th><th>Interações</th><th>Comprou</th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <!-- ============ 6 API ============ -->
+  <section class="panel" id="api">
+    <div class="section-title">Superfície HTTP — todos os endpoints</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Método</th><th>Rota</th><th>O que faz</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill good">GET</span></td><td><code>/</code></td><td>Este painel de arquitetura e avaliação</td></tr>
+          <tr><td><span class="pill good">GET</span></td><td><code>/docs</code></td><td>Swagger UI (documentação automática)</td></tr>
+          <tr><td><span class="pill good">GET</span></td><td><code>/api</code></td><td>Índice JSON dos endpoints</td></tr>
+          <tr><td><span class="pill good">GET</span></td><td><code>/api/overview</code></td><td>KPIs + últimos logs agregados para o painel</td></tr>
+          <tr><td><span class="pill md">POST</span></td><td><code>/engine/run?n_leads=15</code></td><td>Dispara a engrenagem completa (corpo = meta do CEO)</td></tr>
+          <tr><td><span class="pill md">POST</span></td><td><code>/funnel/lead</code></td><td>Captura um lead no funil</td></tr>
+          <tr><td><span class="pill md">POST</span></td><td><code>/funnel/chat</code></td><td>Conversa natural via Agente Comercial</td></tr>
+          <tr><td><span class="pill md">POST</span></td><td><code>/checkout?lead_id=&valor=&canal=</code></td><td>Simula transação e registra venda</td></tr>
+          <tr><td><span class="pill good">GET</span></td><td><code>/analyst/report</code></td><td>Último relatório (ROI/CAC/Conversão)</td></tr>
+          <tr><td><span class="pill good">GET</span></td><td><code>/logs?run_id=</code></td><td>Log de execução (filtro opcional)</td></tr>
+          <tr><td><span class="pill good">GET</span></td><td><code>/leads</code></td><td>Jornada de todos os leads</td></tr>
+          <tr><td><span class="pill good">GET</span></td><td><code>/sales</code></td><td>Vendas registradas</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Exemplo — disparar via curl/PowerShell</div>
+    <div class="card">
+      <pre># PowerShell
+$body = @{
+  meta = "Aumentar Vendas"
+  produto = "Enriquecer CRM"
+  orcamento = 5000
+  ticket_medio = 197
+  publico_alvo = "donos de pequenos negocios"
+} | ConvertTo-Json
+
+Invoke-WebRequest -Uri "http://127.0.0.1:8000/engine/run?n_leads=15" `
+  -Method Post -Body $body -ContentType "application/json"</pre>
+      <p class="desc" style="margin-top:8px">Resposta: <code>EngineRunResponse</code> com rota, logs[], pesquisa, copy_output, trafego, vendas[], relatorio e decisao_final.</p>
+    </div>
+  </section>
+
+  <!-- ============ 7 AVALIAÇÃO ============ -->
+  <section class="panel" id="avaliacao">
+    <div class="section-title">Pontos fortes (para apresentar aos sócios)</div>
+    <div class="grid g2">
+      <div class="card">
+        <ul class="clean">
+          <li><b>Separação clara de responsabilidades</b> — novo agente não mexe no Cérebro, só no mapeador do executor.</li>
+          <li><b>Loop de feedback real</b> — Analista → Cérebro fecha o ciclo; o sistema <b>decide a próxima rodada</b>, não é pipeline linear.</li>
+          <li><b>Contratos tipados</b> — Pydantic em toda fronteira; Swagger se auto-documenta.</li>
+          <li><b>Ponto único de troca de comunicação</b> — função interna ↔ HTTP local mudando 1 função.</li>
+          <li><b>Persistência desacoplada</b> — trocar SQLite por Postgres = mexer só em <code>database/db.py</code>.</li>
+          <li><b>Auditoria completa</b> — cada passo vira <code>ExecutionLog</code> (terminal + tabela SQLite).</li>
+          <li><b>Testável de ponta a ponta</b> — <code>test_flow.py</code> valida o ciclo com asserts, sem servidor.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="dot" style="background:var(--warn)"></span>Decisões de design que sustentam a apresentação</h3>
+        <ul class="clean">
+          <li><b>Pipeline</b> — <code>brain.run_pipeline()</code> encadeia executores com contexto.</li>
+          <li><b>Strategy / injeção</b> — Cérebro recebe o <code>executor</code>, não conhece a implementação.</li>
+          <li><b>Adapter</b> — <code>_internal_executor</code> isola a forma de chamar agentes.</li>
+          <li><b>Repository leve</b> — toda persistência atrás de <code>Database</code>.</li>
+          <li><b>Máquina de estados</b> — transições do funil controladas e auditáveis.</li>
+          <li><b>DTOs</b> — <code>schemas.py</code> como contrato único entre módulos.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-title">Pontos fracos & riscos (honestidade técnica)</div>
+    <div class="card" style="overflow:auto">
+      <table>
+        <thead><tr><th>#</th><th>Ponto</th><th>Por que importa</th><th>Gravidade</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Simulações determinísticas (intenção por substring; venda por <code>i%5</code>)</td><td>Não é IA de verdade; frases fora do dicionário caem no fallback</td><td><span class="pill hi">Alta (produção)</span></td></tr>
+          <tr><td>2</td><td>Roteamento por palavra-chave frágil</td><td>Sinônimos, typos e metas mistas quebram a rota</td><td><span class="pill md">Média</span></td></tr>
+          <tr><td>3</td><td>Sem autenticação/autorização</td><td>Inaceitável se expor fora de localhost</td><td><span class="pill hi">Alta (se expor)</span></td></tr>
+          <tr><td>4</td><td>DB singleton com <code>check_same_thread=False</code></td><td>Risco de race em múltiplos workers uvicorn</td><td><span class="pill md">Média</span></td></tr>
+          <tr><td>5</td><td>Sem testes automatizados formais (pytest/CI)</td><td>Sem regressão garantida ao evoluir o código</td><td><span class="pill md">Média</span></td></tr>
+          <tr><td>6</td><td>Estado do Cérebro em memória</td><td>Restart perde contexto da rodada (DB guarda, objeto não)</td><td><span class="pill lo">Baixa</span></td></tr>
+          <tr><td>7</td><td>Sem handler global de erros</td><td>Exception vaza como 500 sem corpo padronizado</td><td><span class="pill md">Média</span></td></tr>
+          <tr><td>8</td><td>Log via <code>print</code></td><td>Produção exige logging estruturado (níveis/arquivo)</td><td><span class="pill lo">Baixa</span></td></tr>
+          <tr><td>9</td><td>Tráfego/orçamento inventado</td><td>Não integra Meta/Google Ads reais — placeholder</td><td><span class="pill hi">Alta (uso real)</span></td></tr>
+          <tr><td>10</td><td>Sem migrations de schema</td><td>Tabela mudou, DB antigo incompatível</td><td><span class="pill md">Média</span></td></tr>
+          <tr><td>11</td><td>Funil sequencial em loop</td><td>10 mil leads ficam lentos; sem assíncrono</td><td><span class="pill lo">Baixa (MVP)</span></td></tr>
+          <tr><td>12</td><td>ROI usa orçamento fixo da meta</td><td>Números consistentes internamente, mas não batem com mídia real</td><td><span class="pill md">Média</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Roadmap para produção</div>
+    <div class="split">
+      <div class="card">
+        <h3><span class="dot" style="background:var(--ok)"></span>Curto prazo — endurecer o MVP</h3>
+        <ul class="clean">
+          <li>Logging estruturado no lugar dos <code>print</code></li>
+          <li>Handler global de erros (JSON padronizado)</li>
+          <li>Testes com pytest + TestClient do FastAPI</li>
+          <li>Chave de API simples mesmo que só localhost</li>
+          <li>Migrations leves de schema</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="dot" style="background:var(--acc2)"></span>Médio prazo — IA de verdade</h3>
+        <ul class="clean">
+          <li>Intenção do Comercial → classificador (LLM ou sinonimos)</li>
+          <li>Roteamento do Cérebro via LLM com schema validado</li>
+          <li>Agentes via HTTP interno (cada um = serviço)</li>
+          <li>Fila/assíncrono para funil em massa</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="dot" style="background:var(--vio)"></span>Longo prazo — escala</h3>
+        <ul class="clean">
+          <li>SQLite → PostgreSQL</li>
+          <li>Integração real Meta Ads / Google Ads API</li>
+          <li>Dashboard de métricas ao vivo</li>
+          <li>Multi-tenant (vários CEOs/projetos)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="dot" style="background:var(--warn)"></span>Perguntas para avaliar com os sócios</h3>
+        <ul class="clean">
+          <li>O Cérebro conhece demais os executores (acoplamento)?</li>
+          <li>Novo agente "Fidelidade": quantos arquivos mudam?</li>
+          <li>O relatório do Analista muda a rota de verdade?</li>
+          <li>O que quebra com 100 chamadas simultâneas?</li>
+          <li>ROI faz sentido de negócio ou só de demo?</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 8 ESTUDO ============ -->
+  <section class="panel" id="estudo">
+    <div class="section-title">Roteiro de estudo — ordem sugerida de leitura</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>#</th><th>Arquivo</th><th>O que você aprende</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>models/schemas.py</code></td><td>Contratos: o que cada agente come e devolve</td></tr>
+          <tr><td>2</td><td><code>agents/brain.py</code></td><td><b>Coração do sistema</b> — route() e process_feedback()</td></tr>
+          <tr><td>3</td><td><code>agents/analyst.py</code></td><td>Cálculo de ROI/CAC/conversão e devolução ao Cérebro</td></tr>
+          <tr><td>4</td><td><code>core/engine.py</code></td><td>Glue — onde tudo conecta (_internal_executor)</td></tr>
+          <tr><td>5</td><td><code>core/funnel.py</code> + <code>agents/commercial.py</code></td><td>Estados do lead e conversa natural</td></tr>
+          <tr><td>6</td><td><code>database/db.py</code></td><td>O que persiste e como</td></tr>
+          <tr><td>7</td><td><code>main.py</code></td><td>Superfície HTTP e endpoints</td></tr>
+          <tr><td>8</td><td><code>test_flow.py</code></td><td>Ciclo completo em modo script (validação)</td></tr>
+          <tr><td>9</td><td><code>ARCHITECTURE.md</code></td><td>Documento completo de arquitetura e avaliação</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Execução local (terminal)</div>
+    <div class="card">
+      <pre># 1) instalar dependências
+pip install -r requirements.txt
+
+# 2) teste do ciclo completo (sem servidor)
+python test_flow.py
+
+# 3) subir o servidor + painel
+python main.py
+# → painel:  http://127.0.0.1:8000/
+# → swagger: http://127.0.0.1:8000/docs
+
+# 4) disparar a engrenagem via JSON
+# (veja aba 6 — API)</pre>
+    </div>
+
+    <div class="section-title">Experimentos recomendados</div>
+    <div class="grid g3">
+      <div class="card"><h3><span class="dot"></span>Troque a meta</h3><p class="desc">Mude "Aumentar Vendas" para "Captar Leads" e observe a rota do Cérebro mudar (aba 2).</p></div>
+      <div class="card"><h3><span class="dot"></span>Brinque com os números</h3><p class="desc">Orçamento 500 vs 20000 e veja ROI/CAC reagirem na aba 1 e 4.</p></div>
+      <div class="card"><h3><span class="dot"></span>Siga o log</h3><p class="desc">Dispare a engrenagem e leia cada passo na aba 4 — mesmo log do terminal.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Projeto Enriquecer — MVP de orquestração de agentes de marketing</span>
+    <span>127.0.0.1:8000 · <a href="/docs">Swagger</a> · <a href="/api">API index</a> · <a href="https://github.com/anomalyco/opencode/issues">feedback</a></span>
+  </footer>
+</div>
+
+<script>
+const AGENTES = [
+  {cor:"var(--acc)", nome:"Agente Cérebro", arq:"agents/brain.py", papel:"Orquestrador central — roteia, delega e decide.",
+   funcs:[
+    ["route(CEOGoal)","Define a rota por palavra-chave da meta (vendas/tráfego/copy/marca/default) e registra o motivo."],
+    ["dispatch(TaskDispatch)","Delega tarefa ao executor (função interna ou HTTP) com log de payload."],
+    ["run_pipeline(CEOGoal)","Executa a rota completa em sequência, passando context adiante (pesquisa→copy→trafego)."],
+    ["process_feedback(AnalystReport)","2ª metade do loop: lê ROI/CAC/conversão e gera NOVA decisão (rota, ajustes, nova_meta)."],
+    ["_log(agent, action, detail)","Cada passo vira ExecutionLog (terminal + execution_log no SQLite)."],
+    ["reset(CEOG","Inicia nova rodada: run_id, logs zerados, meta guardada."]
+  ],
+  tags:["roteamento","feedback loop","delegação"]},
+  {cor:"var(--acc2)", nome:"Agente Pesquisa", arq:"agents/research.py", papel:"Processa mercado, personas e ângulos de venda.",
+   funcs:[
+    ["analyze(payload)","Extrai goal + ajustes e devolve ResearchOutput: 3 personas, 4 dores, 3 ângulos, canais sugeridos."],
+    ["— ajustes","Se ação=reduzir_cac: reduz canais e insere ângulo de oferta de entrada."]
+  ],
+  tags:["personas","dores","ângulos"]},
+  {cor:"var(--vio)", nome:"Agente Copy", arq:"agents/copy.py", papel:"Gera textos de anúncios e página de vendas baseado na pesquisa.",
+   funcs:[
+    ["generate(payload)","Lê ResearchOutput do context e devolve CopyOutput."],
+    ["— anuncios[]","3 variações de anúncio com prova social/urgência."],
+    ["— headlines[] + pagina_vendas","3 headlines + landing page em markdown (problema→solução→garantia→CTA)."],
+    ["— cta","'QUERO COMEÇAR' ou 'GARANTIR VAGA' se houver urgência do ajuste."]
+  ],
+  tags:["anúncios","landing","CTA"]},
+  {cor:"#f472b6", nome:"Agente Tráfego", arq:"agents/traffic.py", papel:"Define públicos, canais e orçamentos.",
+   funcs:[
+    ["plan(payload)","Devolve TrafficOutput com públicos (lookalike), canais e verba."],
+    ["— orcamento_por_canal","Distribuição proporcional (1.0 / 0.7) do orçamento entre canais."],
+    ["— Ajustes","escalar: +15% verba · reduzir_cac: verba só no melhor canal · cortar: 2 canais."]
+  ],
+  tags:["públicos","canais","orçamento"]},
+  {cor:"var(--ok)", nome:"Agente Comercial", arq:"agents/commercial.py", papel:"Interface de simulação de conversa natural com o lead.",
+   funcs:[
+    ["reply(lead_id, msg, stage)","Classifica intenção (compra→preço→mecanismo→objeção→aquecer) e responde."],
+    ["— avanço de estágio","Nunca volta etapa: Captacao → Educacao → Conversao."],
+    ["— qualificado","true quando alcança Conversao → libera checkout."]
+  ],
+  tags:["NLU simulada","funil","objeções"]},
+  {cor:"#fbbf24", nome:"Funil de Vendas", arq:"core/funnel.py", papel:"Fluxo de estados do lead: Captação → Educação → Conversão.",
+   funcs:[
+    ["capture(nome, origem)","Cria lead em Captacao (INSERT + retorno LeadJourney)."],
+    ["advance(lead_id, reply)","Aplica estágio do CommercialReply e incrementa interações."],
+    ["close_won / close_lost","Fecha como Vendido(comprou=1) ou Perdido."],
+    ["status(lead_id)","Lê jornada atual do lead."]
+  ],
+  tags:["estados","jornada","SQLite"]},
+  {cor:"#a3e635", nome:"Checkout", arq:"core/checkout.py", papel:"Simulação de transação e registro de venda.",
+   funcs:[
+    ["pay(lead_id, valor, canal)","Grava sale (status=aprovada) + marca lead Vendido e retorna SaleRecord."]
+  ],
+  tags:["transação","venda"]},
+  {cor:"var(--warn)", nome:"Agente Analista", arq:"agents/analyst.py", papel:"Fechamento do loop — calcula métricas e devolve ao Cérebro.",
+   funcs:[
+    ["_snapshot(investimento, leads)","Soma vendas/receita e calcula roi, cac, conversao."],
+    ["analyze(goal, investimento, leads, run_id)","Gera AnalystReport com recomendação por limiar (ROI/CAC/conv) e persiste em reports."],
+    ["send_to_brain(report, brain)","Envia o relatório ao Cérebro → process_feedback() → NOVA decisão (fecha o loop)."]
+  ],
+  tags:["ROI","CAC","conversão"]},
+  {cor:"#94a3b8", nome:"Motor (Engine)", arq:"core/engine.py", papel:"Acopla tudo no ciclo completo de ponta a ponta.",
+   funcs:[
+    ["run(goal, n_leads)","Pipeline + funil + checkout + analista + nova decisão → EngineRunResponse."],
+    ["_internal_executor(task)","PONTO ÚNICO de troca: função interna hoje, HTTP local amanhã."],
+    ["get_engine()","Singleton do motor para a aplicação."]
+  ],
+  tags:["orquestração","loop","singleton"]},
+  {cor:"#2dd4bf", nome:"Persistência", arq:"database/db.py", papel:"SQLite — jornada do lead + métricas + logs.",
+   funcs:[
+    ["create_lead / update_lead_stage","Insere e transiciona leads."],
+    ["record_sale / list_sales","Registra e consulta vendas."],
+    ["save_report / list_reports","Relatórios do Analista por rodada."],
+    ["log / list_logs","execution_log auditável (filtro por run_id)."],
+    ["get_db()","Singleton da conexão."]
+  ],
+  tags:["SQLite","repository","audit"]},
+  {cor:"#60a5fa", nome:"API (FastAPI)", arq:"main.py", papel:"Superfície HTTP na porta 8000 + painel + Swagger.",
+   funcs:[
+    ["GET /","Este painel de arquitetura e avaliação."],
+    ["GET /api · /api/overview","Índice JSON + KPIs agregados."],
+    ["POST /engine/run","Dispara a engrenagem com a meta do CEO."],
+    ["POST /funnel/lead · /funnel/chat · /checkout","Captação, conversa e transação."],
+    ["GET /analyst/report · /logs · /leads · /sales","Consulta de métricas e jornada."]
+  ],
+  tags:["FastAPI","Swagger","JSON"]}
+];
+
+function renderAgentes(){
+  const el = document.getElementById('agentesGrid');
+  el.innerHTML = AGENTES.map(a=>`
+    <div class="card">
+      <h3><span class="dot" style="background:${a.cor}"></span>${a.nome}
+        <span style="margin-left:auto;font-size:11px;color:var(--mut);font-weight:600">${a.arq}</span></h3>
+      <p class="desc" style="margin-bottom:8px">${a.papel}</p>
+      ${a.funcs.map(f=>`<div class="method"><div class="m">${f[0]}</div><div class="x">${f[1]}</div></div>`).join('')}
+      <div style="margin-top:8px">${a.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    </div>`).join('');
+}
+
+// Tabs
+document.querySelectorAll('nav.tabs button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('section.panel').forEach(x=>x.classList.remove('show'));
+    b.classList.add('active');
+    document.getElementById(b.dataset.tab).classList.add('show');
+    if(b.dataset.tab==='dados') loadDados();
+    if(b.dataset.tab==='motor') loadOverview();
+  };
+});
+
+async function jget(u){const r=await fetch(u);return r.json();}
+async function jpost(u,b){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return r.json();}
+
+function fmtMoney(v){return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtPct(v){return (Number(v||0)*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';}
+
+async function loadOverview(){
+  try{
+    const o = await jget('/api/overview');
+    const r = o.relatorio;
+    if(r){
+      kRoi.textContent = Number(r.roi).toFixed(2);
+      kCac.textContent = fmtMoney(r.cac);
+      kConv.textContent = fmtPct(r.conversao);
+      kVendas.textContent = r.vendas;
+      kReceita.textContent = fmtMoney(r.receita);
+      kLeads.textContent = r.leads;
+    }
+    statusBadge.textContent = 'servidor online';
+    if(o.logs && o.logs.length){
+      const cons = document.getElementById('console');
+      cons.innerHTML = o.logs.slice(-40).map(l=>
+        `<div><span class="mut">${String(l.step).padStart(2,'0')}</span> <span class="head">${l.agent}</span> <span>${l.action}</span> <span class="mut">${l.detail||''}</span></div>`
+      ).join('');
+    }
+  }catch(e){
+    statusBadge.textContent='servidor offline';
+    statusBadge.classList.remove('live');
+  }
+}
+
+async function loadDados(){
+  try{
+    const [ov, sales, leads] = await Promise.all([jget('/api/overview'), jget('/sales'), jget('/leads')]);
+    dLeads.textContent = ov.counts ? ov.counts.leads : leads.leads.length;
+    dVendas.textContent = ov.counts ? ov.counts.sales : sales.vendas.length;
+    dLogs.textContent = ov.counts ? ov.counts.logs : 0;
+    dReports.textContent = ov.counts ? ov.counts.reports : 0;
+    document.querySelector('#tblSales tbody').innerHTML = sales.vendas.slice(-12).reverse().map(s=>
+      `<tr><td>${s.sale_id}</td><td>${s.lead_id}</td><td>${fmtMoney(s.valor)}</td><td>${s.canal}</td><td><span class="pill good">${s.status}</span></td></tr>`).join('') || '<tr><td colspan=5 class=mut>Sem vendas</td></tr>';
+    document.querySelector('#tblLeads tbody').innerHTML = leads.leads.slice(-12).reverse().map(l=>
+      `<tr><td>${l.lead_id}</td><td>${l.nome}</td><td>${l.stage}</td><td>${l.origem}</td><td>${l.interacoes}</td><td>${l.comprou?'Sim':'Não'}</td></tr>`).join('') || '<tr><td colspan=6 class=mut>Sem leads</td></tr>';
+  }catch(e){console.warn(e);}
+}
+
+async function runEngine(){
+  const btn = document.getElementById('btnRun');
+  btn.disabled = true; btn.textContent = '⏳ Executando engrenagem…';
+  const cons = document.getElementById('console');
+  cons.innerHTML = '<span class="mut">Disparando POST /engine/run …</span>\n';
+  try{
+    const body = {
+      meta: fMeta.value, produto: fProd.value,
+      orcamento: Number(fOrc.value), ticket_medio: Number(fTick.value),
+      publico_alvo: fPub.value
+    };
+    const t0 = performance.now();
+    const res = await jpost('/engine/run?n_leads='+Number(fLeads.value), body);
+    const ms = Math.round(performance.now()-t0);
+
+    cons.innerHTML = '';
+    res.logs.forEach(l=>{
+      const line = document.createElement('div');
+      line.innerHTML = `<span class="mut">${String(l.step).padStart(2,'0')}</span> <span class="head">${l.agent}</span> <span>${l.action}</span> <span class="mut">${l.detail||''}</span>`;
+      cons.appendChild(line);
+    });
+    cons.insertAdjacentHTML('beforeend',
+      `<div class="ok">✔ Ciclo completo em ${ms}ms — run_id no servidor · ${res.logs.length} passos · ${res.vendas.length} vendas</div>`);
+    cons.scrollTop = cons.scrollHeight;
+
+    const r = res.relatorio;
+    resReport.innerHTML = `ROI <b>${Number(r.roi).toFixed(2)}</b> · CAC <b>${fmtMoney(r.cac)}</b> · Conversão <b>${fmtPct(r.conversao)}</b><br>
+      Vendas: ${r.vendas} · Receita: ${fmtMoney(r.receita)} · Investimento: ${fmtMoney(r.investimento)} · Leads: ${r.leads}<br>
+      <span style="color:var(--mut)">${r.recomendacao}</span>`;
+    const d = res.decisao_final;
+    resDecision.innerHTML = `<b>${d.nova_meta||'—'}</b><br>Rota: ${d.rota.join(' → ')}<br>
+      <span style="color:var(--mut)">${d.motivo}</span><br>
+      <span style="font-size:12px;color:var(--acc2)">Ajustes: ${JSON.stringify(d.ajustes)}</span>`;
+    resCopy.innerHTML = `<b>Headline:</b> ${res.copy_output.headlines[0]}<br>
+      <b>CTA:</b> ${res.copy_output.cta}<br>
+      <b>Ângulo:</b> ${res.pesquisa.angulos_venda[0]}<br>
+      <b>Tráfego:</b> ${res.trafego.resumo}<br>
+      <b>Anúncios:</b> ${res.copy_output.anuncios.length} · <b>Públicos:</b> ${res.trafego.publicos.length}`;
+
+    loadOverview(); loadDados();
+  }catch(e){
+    cons.insertAdjacentHTML('beforeend', `<div class="err">Erro: ${e}</div>`);
+  }finally{
+    btn.disabled = false; btn.textContent = '▶ Disparar Engrenagem completa';
+  }
+}
+
+function resetDash(){ loadOverview(); loadDados(); }
+
+renderAgentes();
+loadOverview();
+</script>
+</body>
+</html>

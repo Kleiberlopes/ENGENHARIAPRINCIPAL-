@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Banco de dados local (gerado em runtime)
+enriquecer.db
+*.db
+
+# Logs / temp
+*.log
+.pytest_cache/
+.mypy_cache/
+
+# IDE / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
